@@ -1,0 +1,6 @@
+@Assig1_HostAddress = http://localhost:5088
+
+GET {{Assig1_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
