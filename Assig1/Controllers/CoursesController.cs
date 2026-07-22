@@ -1,4 +1,5 @@
 ﻿using Assig1.Data;
+using Assig1.DTOs;
 using Assig1.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -18,16 +19,23 @@ namespace Assig1.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<Course>>> GetAllCourses()
+        public async Task<ActionResult<List<CourseDto>>> GetAllCourses()
         {
             // Read all courses from the database
-            List<Course> courses = await _context.Courses.ToListAsync();
+            List<CourseDto> courses = await _context.Courses
+                .Select(c => new CourseDto
+                {
+                    Id = c.Id,
+                    Name = c.Name,
+                    Hours = c.Hours
+                })
+                .ToListAsync();
 
             return Ok(courses);
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Course>> GetCourseById(int id)
+        public async Task<ActionResult<CourseDto>> GetCourseById(int id)
         {
             // Search for one course by its Id
             Course? course = await _context.Courses.FindAsync(id);
@@ -37,12 +45,24 @@ namespace Assig1.Controllers
                 return NotFound();
             }
 
-            return Ok(course);
+            return Ok(new CourseDto
+            {
+                Id = course.Id,
+                Name = course.Name,
+                Hours = course.Hours
+            });
         }
 
         [HttpPost]
-        public async Task<ActionResult<Course>> AddCourse(Course course)
+        public async Task<ActionResult<CourseDto>> AddCourse(CourseCreateDto courseDto)
         {
+            // Map the incoming DTO to a new Course entity
+            Course course = new()
+            {
+                Name = courseDto.Name,
+                Hours = courseDto.Hours
+            };
+
             // Add the course to the context
             _context.Courses.Add(course);
 
@@ -52,14 +72,19 @@ namespace Assig1.Controllers
             return CreatedAtAction(
                 nameof(GetCourseById),
                 new { id = course.Id },
-                course
+                new CourseDto
+                {
+                    Id = course.Id,
+                    Name = course.Name,
+                    Hours = course.Hours
+                }
             );
         }
 
         [HttpPut("{id}")]
-        public async Task<ActionResult<Course>> UpdateCourse(
+        public async Task<ActionResult<CourseDto>> UpdateCourse(
             int id,
-            Course updatedCourse)
+            CourseUpdateDto courseDto)
         {
             // Search for the existing course
             Course? existingCourse =
@@ -71,13 +96,18 @@ namespace Assig1.Controllers
             }
 
             // Update the course values
-            existingCourse.Name = updatedCourse.Name;
-            existingCourse.Hours = updatedCourse.Hours;
+            existingCourse.Name = courseDto.Name;
+            existingCourse.Hours = courseDto.Hours;
 
             // Save the changes in the database
             await _context.SaveChangesAsync();
 
-            return Ok(existingCourse);
+            return Ok(new CourseDto
+            {
+                Id = existingCourse.Id,
+                Name = existingCourse.Name,
+                Hours = existingCourse.Hours
+            });
         }
 
         [HttpDelete("{id}")]
@@ -100,7 +130,7 @@ namespace Assig1.Controllers
             return NoContent();
         }
         [HttpGet("{courseId}/students")]
-        public async Task<ActionResult> GetCourseStudents(int courseId)
+        public async Task<ActionResult<CourseStudentsDto>> GetCourseStudents(int courseId)
         {
             // Find the course with registered students
             Course? course = await _context.Courses
@@ -113,21 +143,21 @@ namespace Assig1.Controllers
             }
 
             // Return course data with student details
-            return Ok(new
+            return Ok(new CourseStudentsDto
             {
-                course.Id,
-                course.Name,
-                course.Hours,
-                Students = course.Students.Select(s => new
+                Id = course.Id,
+                Name = course.Name,
+                Hours = course.Hours,
+                Students = course.Students.Select(s => new StudentSummaryDto
                 {
-                    s.Id,
-                    s.Name
-                })
+                    Id = s.Id,
+                    Name = s.Name
+                }).ToList()
             });
         }
 
         [HttpGet("{courseId}/teachers")]
-        public async Task<ActionResult> GetCourseTeachers(int courseId)
+        public async Task<ActionResult<CourseTeachersDto>> GetCourseTeachers(int courseId)
         {
             // Find the course with assigned teachers
             Course? course = await _context.Courses
@@ -140,16 +170,16 @@ namespace Assig1.Controllers
             }
 
             // Return course data with teacher details
-            return Ok(new
+            return Ok(new CourseTeachersDto
             {
-                course.Id,
-                course.Name,
-                course.Hours,
-                Teachers = course.Teachers.Select(t => new
+                Id = course.Id,
+                Name = course.Name,
+                Hours = course.Hours,
+                Teachers = course.Teachers.Select(t => new TeacherSummaryDto
                 {
-                    t.Id,
-                    t.Name
-                })
+                    Id = t.Id,
+                    Name = t.Name
+                }).ToList()
             });
         }
     }

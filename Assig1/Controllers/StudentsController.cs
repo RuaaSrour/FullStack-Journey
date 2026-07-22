@@ -1,4 +1,5 @@
 ﻿using Assig1.Data;
+using Assig1.DTOs;
 using Assig1.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -18,17 +19,22 @@ namespace Assig1.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<Student>>> GetAllStudents()
+        public async Task<ActionResult<List<StudentDto>>> GetAllStudents()
         {
             // Read all students from the database
-            List<Student> students =
-                await _context.Students.ToListAsync();
+            List<StudentDto> students = await _context.Students
+                .Select(s => new StudentDto
+                {
+                    Id = s.Id,
+                    Name = s.Name
+                })
+                .ToListAsync();
 
             return Ok(students);
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Student>> GetStudentById(int id)
+        public async Task<ActionResult<StudentDto>> GetStudentById(int id)
         {
             // Search for one student by Id
             Student? student =
@@ -39,12 +45,22 @@ namespace Assig1.Controllers
                 return NotFound();
             }
 
-            return Ok(student);
+            return Ok(new StudentDto
+            {
+                Id = student.Id,
+                Name = student.Name
+            });
         }
 
         [HttpPost]
-        public async Task<ActionResult<Student>> AddStudent(Student student)
+        public async Task<ActionResult<StudentDto>> AddStudent(StudentCreateDto studentDto)
         {
+            // Map the incoming DTO to a new Student entity
+            Student student = new()
+            {
+                Name = studentDto.Name
+            };
+
             // Add the student to the context
             _context.Students.Add(student);
 
@@ -54,14 +70,18 @@ namespace Assig1.Controllers
             return CreatedAtAction(
                 nameof(GetStudentById),
                 new { id = student.Id },
-                student
+                new StudentDto
+                {
+                    Id = student.Id,
+                    Name = student.Name
+                }
             );
         }
 
         [HttpPut("{id}")]
-        public async Task<ActionResult<Student>> UpdateStudent(
+        public async Task<ActionResult<StudentDto>> UpdateStudent(
             int id,
-            Student updatedStudent)
+            StudentUpdateDto studentDto)
         {
             // Search for the existing student
             Student? existingStudent =
@@ -73,12 +93,16 @@ namespace Assig1.Controllers
             }
 
             // Update the student name
-            existingStudent.Name = updatedStudent.Name;
+            existingStudent.Name = studentDto.Name;
 
             // Save the changes
             await _context.SaveChangesAsync();
 
-            return Ok(existingStudent);
+            return Ok(new StudentDto
+            {
+                Id = existingStudent.Id,
+                Name = existingStudent.Name
+            });
         }
 
         [HttpDelete("{id}")]
@@ -176,7 +200,7 @@ namespace Assig1.Controllers
             return Ok("Course removed from student successfully.");
         }
         [HttpGet("{studentId}/courses")]
-        public async Task<ActionResult> GetStudentCourses(int studentId)
+        public async Task<ActionResult<StudentCoursesDto>> GetStudentCourses(int studentId)
         {
             // Find the student with registered courses
             Student? student = await _context.Students
@@ -189,16 +213,16 @@ namespace Assig1.Controllers
             }
 
             // Return student data with course details
-            return Ok(new
+            return Ok(new StudentCoursesDto
             {
-                student.Id,
-                student.Name,
-                Courses = student.Courses.Select(c => new
+                Id = student.Id,
+                Name = student.Name,
+                Courses = student.Courses.Select(c => new CourseSummaryDto
                 {
-                    c.Id,
-                    c.Name,
-                    c.Hours
-                })
+                    Id = c.Id,
+                    Name = c.Name,
+                    Hours = c.Hours
+                }).ToList()
             });
         }
 

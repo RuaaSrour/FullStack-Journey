@@ -1,4 +1,5 @@
 ﻿using Assig1.Data;
+using Assig1.DTOs;
 using Assig1.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -18,17 +19,22 @@ namespace Assig1.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<Teacher>>> GetAllTeachers()
+        public async Task<ActionResult<List<TeacherDto>>> GetAllTeachers()
         {
             // Read all teachers from the database
-            List<Teacher> teachers =
-                await _context.Teachers.ToListAsync();
+            List<TeacherDto> teachers = await _context.Teachers
+                .Select(t => new TeacherDto
+                {
+                    Id = t.Id,
+                    Name = t.Name
+                })
+                .ToListAsync();
 
             return Ok(teachers);
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Teacher>> GetTeacherById(int id)
+        public async Task<ActionResult<TeacherDto>> GetTeacherById(int id)
         {
             // Search for one teacher by Id
             Teacher? teacher =
@@ -39,12 +45,22 @@ namespace Assig1.Controllers
                 return NotFound();
             }
 
-            return Ok(teacher);
+            return Ok(new TeacherDto
+            {
+                Id = teacher.Id,
+                Name = teacher.Name
+            });
         }
 
         [HttpPost]
-        public async Task<ActionResult<Teacher>> AddTeacher(Teacher teacher)
+        public async Task<ActionResult<TeacherDto>> AddTeacher(TeacherCreateDto teacherDto)
         {
+            // Map the incoming DTO to a new Teacher entity
+            Teacher teacher = new()
+            {
+                Name = teacherDto.Name
+            };
+
             // Add the teacher to the context
             _context.Teachers.Add(teacher);
 
@@ -54,14 +70,18 @@ namespace Assig1.Controllers
             return CreatedAtAction(
                 nameof(GetTeacherById),
                 new { id = teacher.Id },
-                teacher
+                new TeacherDto
+                {
+                    Id = teacher.Id,
+                    Name = teacher.Name
+                }
             );
         }
 
         [HttpPut("{id}")]
-        public async Task<ActionResult<Teacher>> UpdateTeacher(
+        public async Task<ActionResult<TeacherDto>> UpdateTeacher(
             int id,
-            Teacher updatedTeacher)
+            TeacherUpdateDto teacherDto)
         {
             // Search for the existing teacher
             Teacher? existingTeacher =
@@ -73,12 +93,16 @@ namespace Assig1.Controllers
             }
 
             // Update the teacher name
-            existingTeacher.Name = updatedTeacher.Name;
+            existingTeacher.Name = teacherDto.Name;
 
             // Save the changes
             await _context.SaveChangesAsync();
 
-            return Ok(existingTeacher);
+            return Ok(new TeacherDto
+            {
+                Id = existingTeacher.Id,
+                Name = existingTeacher.Name
+            });
         }
 
         [HttpDelete("{id}")]
@@ -178,7 +202,7 @@ namespace Assig1.Controllers
 
         // Get teacher courses
         [HttpGet("{teacherId}/courses")]
-        public async Task<ActionResult> GetTeacherCourses(int teacherId)
+        public async Task<ActionResult<TeacherCoursesDto>> GetTeacherCourses(int teacherId)
         {
             // Find the teacher with assigned courses
             Teacher? teacher = await _context.Teachers
@@ -191,16 +215,16 @@ namespace Assig1.Controllers
             }
 
             // Return teacher data with course details
-            return Ok(new
+            return Ok(new TeacherCoursesDto
             {
-                teacher.Id,
-                teacher.Name,
-                Courses = teacher.Courses.Select(c => new
+                Id = teacher.Id,
+                Name = teacher.Name,
+                Courses = teacher.Courses.Select(c => new CourseSummaryDto
                 {
-                    c.Id,
-                    c.Name,
-                    c.Hours
-                })
+                    Id = c.Id,
+                    Name = c.Name,
+                    Hours = c.Hours
+                }).ToList()
             });
         }
     }
