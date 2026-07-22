@@ -101,6 +101,7 @@ namespace Assig1.Controllers
 
             return NoContent();
         }
+        // Student-course relationship endpoints
         [HttpPost("{studentId}/courses/{courseId}")]
         public async Task<ActionResult> AddCourseToStudent(
     int studentId,

@@ -102,6 +102,7 @@ namespace Assig1.Controllers
             return NoContent();
         }
 
+        // Teacher-course relationship endpoints
         [HttpPost("{teacherId}/courses/{courseId}")]
         public async Task<ActionResult> AddCourseToTeacher(
     int teacherId,
@@ -174,25 +175,27 @@ namespace Assig1.Controllers
 
             return Ok("Course removed from teacher successfully.");
         }
-        [HttpGet("{studentId}/courses")]
-        public async Task<ActionResult> GetStudentCourses(int studentId)
-        {
-            // Find the student with registered courses
-            Student? student = await _context.Students
-                .Include(s => s.Courses)
-                .FirstOrDefaultAsync(s => s.Id == studentId);
 
-            if (student == null)
+        // Get teacher courses
+        [HttpGet("{teacherId}/courses")]
+        public async Task<ActionResult> GetTeacherCourses(int teacherId)
+        {
+            // Find the teacher with assigned courses
+            Teacher? teacher = await _context.Teachers
+                .Include(t => t.Courses)
+                .FirstOrDefaultAsync(t => t.Id == teacherId);
+
+            if (teacher == null)
             {
-                return NotFound("Student not found.");
+                return NotFound("Teacher not found.");
             }
 
-            // Return student data with course details
+            // Return teacher data with course details
             return Ok(new
             {
-                student.Id,
-                student.Name,
-                Courses = student.Courses.Select(c => new
+                teacher.Id,
+                teacher.Name,
+                Courses = teacher.Courses.Select(c => new
                 {
                     c.Id,
                     c.Name,

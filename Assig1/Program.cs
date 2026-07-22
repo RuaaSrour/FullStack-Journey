@@ -25,9 +25,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(connectionString);
 });
 
-// Add controller support
-builder.Services.AddControllers();
-
 var app = builder.Build();
 
 
