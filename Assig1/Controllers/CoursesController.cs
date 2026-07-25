@@ -134,7 +134,8 @@ namespace Assig1.Controllers
         {
             // Find the course with registered students
             Course? course = await _context.Courses
-                .Include(c => c.Students)
+                .Include(c => c.StudentCourses)
+                    .ThenInclude(sc => sc.Student)
                 .FirstOrDefaultAsync(c => c.Id == courseId);
 
             if (course == null)
@@ -148,10 +149,10 @@ namespace Assig1.Controllers
                 Id = course.Id,
                 Name = course.Name,
                 Hours = course.Hours,
-                Students = course.Students.Select(s => new StudentSummaryDto
+                Students = course.StudentCourses.Select(sc => new StudentSummaryDto
                 {
-                    Id = s.Id,
-                    Name = s.Name
+                    Id = sc.Student.Id,
+                    Name = sc.Student.Name
                 }).ToList()
             });
         }

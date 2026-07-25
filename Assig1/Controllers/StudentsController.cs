@@ -131,35 +131,39 @@ namespace Assig1.Controllers
     int studentId,
     int courseId)
         {
-            // Find the student with current courses
-            Student? student = await _context.Students
-                .Include(s => s.Courses)
-                .FirstOrDefaultAsync(s => s.Id == studentId);
+            // Confirm the student exists
+            bool studentExists = await _context.Students.AnyAsync(s => s.Id == studentId);
 
-            if (student == null)
+            if (!studentExists)
             {
                 return NotFound("Student not found.");
             }
 
-            // Find the course
-            Course? course = await _context.Courses.FindAsync(courseId);
+            // Confirm the course exists
+            bool courseExists = await _context.Courses.AnyAsync(c => c.Id == courseId);
 
-            if (course == null)
+            if (!courseExists)
             {
                 return NotFound("Course not found.");
             }
 
             // Check if the student already has this course
-            bool alreadyRegistered =
-                student.Courses.Any(c => c.Id == courseId);
+            bool alreadyRegistered = await _context.StudentCourses
+                .AnyAsync(sc => sc.StudentId == studentId && sc.CourseId == courseId);
 
             if (alreadyRegistered)
             {
                 return BadRequest("Student is already registered in this course.");
             }
 
-            // Add the course to the student
-            student.Courses.Add(course);
+            // Create the enrollment record
+            StudentCourse studentCourse = new()
+            {
+                StudentId = studentId,
+                CourseId = courseId
+            };
+
+            _context.StudentCourses.Add(studentCourse);
 
             // Save the relation in the database
             await _context.SaveChangesAsync();
@@ -172,27 +176,17 @@ namespace Assig1.Controllers
     int studentId,
     int courseId)
         {
-            // Find the student with current courses
-            Student? student = await _context.Students
-                .Include(s => s.Courses)
-                .FirstOrDefaultAsync(s => s.Id == studentId);
+            // Find the enrollment record
+            StudentCourse? studentCourse = await _context.StudentCourses
+                .FirstOrDefaultAsync(sc => sc.StudentId == studentId && sc.CourseId == courseId);
 
-            if (student == null)
-            {
-                return NotFound("Student not found.");
-            }
-
-            // Find the course inside the student's courses
-            Course? course = student.Courses
-                .FirstOrDefault(c => c.Id == courseId);
-
-            if (course == null)
+            if (studentCourse == null)
             {
                 return NotFound("Student is not registered in this course.");
             }
 
-            // Remove the course from the student
-            student.Courses.Remove(course);
+            // Remove the enrollment record
+            _context.StudentCourses.Remove(studentCourse);
 
             // Save the relation change
             await _context.SaveChangesAsync();
@@ -204,7 +198,8 @@ namespace Assig1.Controllers
         {
             // Find the student with registered courses
             Student? student = await _context.Students
-                .Include(s => s.Courses)
+                .Include(s => s.StudentCourses)
+                    .ThenInclude(sc => sc.Course)
                 .FirstOrDefaultAsync(s => s.Id == studentId);
 
             if (student == null)
@@ -217,11 +212,11 @@ namespace Assig1.Controllers
             {
                 Id = student.Id,
                 Name = student.Name,
-                Courses = student.Courses.Select(c => new CourseSummaryDto
+                Courses = student.StudentCourses.Select(sc => new CourseSummaryDto
                 {
-                    Id = c.Id,
-                    Name = c.Name,
-                    Hours = c.Hours
+                    Id = sc.Course.Id,
+                    Name = sc.Course.Name,
+                    Hours = sc.Course.Hours
                 }).ToList()
             });
         }

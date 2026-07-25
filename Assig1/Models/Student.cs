@@ -8,7 +8,7 @@
         // Student name
         public string Name { get; set; } = string.Empty;
 
-        // Courses registered by the student
-        public List<Course> Courses { get; set; } = new();
+        // Enrollment records linking this student to courses
+        public ICollection<StudentCourse> StudentCourses { get; set; } = new List<StudentCourse>();
     }
 }
