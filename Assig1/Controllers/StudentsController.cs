@@ -156,6 +156,38 @@ namespace Assig1.Controllers
                 return BadRequest("Student is already registered in this course.");
             }
 
+            // Get the prerequisite courses for this course
+            List<CoursePrerequisite> prerequisites = await _context.CoursePrerequisites
+                .Where(cp => cp.CourseId == courseId)
+                .Include(cp => cp.PrerequisiteCourse)
+                .ToListAsync();
+
+            if (prerequisites.Count > 0)
+            {
+                // Get the course ids the student has completed and passed
+                List<int> completedCourseIds = await _context.StudentCourses
+                    .Where(sc => sc.StudentId == studentId
+                        && sc.CourseStatus == CourseStatus.Completed
+                        && sc.PassStatus == PassStatus.Passed)
+                    .Select(sc => sc.CourseId)
+                    .ToListAsync();
+
+                // Find prerequisite courses not yet completed and passed
+                List<string> missingPrerequisites = prerequisites
+                    .Where(p => !completedCourseIds.Contains(p.PrerequisiteCourseId))
+                    .Select(p => p.PrerequisiteCourse.Name)
+                    .ToList();
+
+                if (missingPrerequisites.Count > 0)
+                {
+                    return BadRequest(new
+                    {
+                        message = "The student is missing required prerequisites.",
+                        missingPrerequisites
+                    });
+                }
+            }
+
             // Create the enrollment record
             StudentCourse studentCourse = new()
             {
@@ -193,6 +225,39 @@ namespace Assig1.Controllers
 
             return Ok("Course removed from student successfully.");
         }
+
+        [HttpPut("{studentId}/courses/{courseId}")]
+        public async Task<ActionResult> UpdateStudentCourse(
+            int studentId,
+            int courseId,
+            StudentCourseUpdateDto updateDto)
+        {
+            // Find the enrollment record
+            StudentCourse? studentCourse = await _context.StudentCourses
+                .FirstOrDefaultAsync(sc => sc.StudentId == studentId && sc.CourseId == courseId);
+
+            if (studentCourse == null)
+            {
+                return NotFound("Student is not registered in this course.");
+            }
+
+            // A course cannot be marked as passed unless it is completed
+            if (updateDto.PassStatus == PassStatus.Passed
+                && updateDto.CourseStatus != CourseStatus.Completed)
+            {
+                return BadRequest("A course cannot be marked as passed unless it is completed.");
+            }
+
+            // Update the status fields
+            studentCourse.CourseStatus = updateDto.CourseStatus;
+            studentCourse.PassStatus = updateDto.PassStatus;
+            studentCourse.CompletionDate = updateDto.CompletionDate;
+
+            await _context.SaveChangesAsync();
+
+            return Ok("Student course updated successfully.");
+        }
+
         [HttpGet("{studentId}/courses")]
         public async Task<ActionResult<StudentCoursesDto>> GetStudentCourses(int studentId)
         {

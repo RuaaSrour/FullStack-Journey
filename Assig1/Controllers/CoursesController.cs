@@ -183,5 +183,122 @@ namespace Assig1.Controllers
                 }).ToList()
             });
         }
+
+        // Get all prerequisites for a course
+        [HttpGet("{courseId}/prerequisites")]
+        public async Task<ActionResult<List<CourseSummaryDto>>> GetCoursePrerequisites(
+            int courseId)
+        {
+            // Check if the course exists
+            bool courseExists = await _context.Courses
+                .AnyAsync(c => c.Id == courseId);
+
+            if (!courseExists)
+            {
+                return NotFound("Course not found.");
+            }
+
+            // Get the prerequisite courses
+            List<CourseSummaryDto> prerequisites =
+                await _context.CoursePrerequisites
+                    .Where(cp => cp.CourseId == courseId)
+                    .Select(cp => new CourseSummaryDto
+                    {
+                        Id = cp.PrerequisiteCourse.Id,
+                        Name = cp.PrerequisiteCourse.Name,
+                        Hours = cp.PrerequisiteCourse.Hours
+                    })
+                    .ToListAsync();
+
+            return Ok(prerequisites);
+        }
+
+
+        // Add a prerequisite to a course
+        [HttpPost("{courseId}/prerequisites/{prerequisiteCourseId}")]
+        public async Task<ActionResult> AddCoursePrerequisite(
+            int courseId,
+            int prerequisiteCourseId)
+        {
+            // A course cannot require itself
+            if (courseId == prerequisiteCourseId)
+            {
+                return BadRequest(
+                    "A course cannot be its own prerequisite.");
+            }
+
+            // Check if the main course exists
+            bool courseExists = await _context.Courses
+                .AnyAsync(c => c.Id == courseId);
+
+            if (!courseExists)
+            {
+                return NotFound("Course not found.");
+            }
+
+            // Check if the prerequisite course exists
+            bool prerequisiteExists = await _context.Courses
+                .AnyAsync(c => c.Id == prerequisiteCourseId);
+
+            if (!prerequisiteExists)
+            {
+                return NotFound("Prerequisite course not found.");
+            }
+
+            // Check if this prerequisite was already added
+            bool alreadyExists = await _context.CoursePrerequisites
+                .AnyAsync(cp =>
+                    cp.CourseId == courseId &&
+                    cp.PrerequisiteCourseId == prerequisiteCourseId);
+
+            if (alreadyExists)
+            {
+                return BadRequest(
+                    "This prerequisite has already been added.");
+            }
+
+            // Create the prerequisite relationship
+            CoursePrerequisite prerequisite = new()
+            {
+                CourseId = courseId,
+                PrerequisiteCourseId = prerequisiteCourseId
+            };
+
+            // Save the new relationship
+            _context.CoursePrerequisites.Add(prerequisite);
+            await _context.SaveChangesAsync();
+
+            return Ok("Prerequisite added successfully.");
+        }
+
+
+        // Remove a prerequisite from a course
+        [HttpDelete("{courseId}/prerequisites/{prerequisiteCourseId}")]
+        public async Task<ActionResult> RemoveCoursePrerequisite(
+            int courseId,
+            int prerequisiteCourseId)
+        {
+            // Find the prerequisite relationship
+            CoursePrerequisite? prerequisite =
+                await _context.CoursePrerequisites
+                    .FirstOrDefaultAsync(cp =>
+                        cp.CourseId == courseId &&
+                        cp.PrerequisiteCourseId == prerequisiteCourseId);
+
+            // Return an error if the relationship does not exist
+            if (prerequisite == null)
+            {
+                return NotFound(
+                    "This prerequisite relationship does not exist.");
+            }
+
+            // Remove the relationship
+            _context.CoursePrerequisites.Remove(prerequisite);
+            await _context.SaveChangesAsync();
+
+            return Ok("Prerequisite removed successfully.");
+        }
+
+
     }
 }
