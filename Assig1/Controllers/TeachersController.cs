@@ -1,6 +1,7 @@
 ﻿using Assig1.Data;
 using Assig1.DTOs;
 using Assig1.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,6 +9,7 @@ namespace Assig1.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class TeachersController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -53,6 +55,7 @@ namespace Assig1.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<TeacherDto>> AddTeacher(TeacherCreateDto teacherDto)
         {
             // Map the incoming DTO to a new Teacher entity
@@ -79,6 +82,7 @@ namespace Assig1.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<TeacherDto>> UpdateTeacher(
             int id,
             TeacherUpdateDto teacherDto)
@@ -106,6 +110,7 @@ namespace Assig1.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult> DeleteTeacher(int id)
         {
             // Search for the teacher
@@ -128,6 +133,7 @@ namespace Assig1.Controllers
 
         // Teacher-course relationship endpoints
         [HttpPost("{teacherId}/courses/{courseId}")]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult> AddCourseToTeacher(
     int teacherId,
     int courseId)
@@ -168,6 +174,7 @@ namespace Assig1.Controllers
             return Ok("Course added to teacher successfully.");
         }
         [HttpDelete("{teacherId}/courses/{courseId}")]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult> RemoveCourseFromTeacher(
         int teacherId,
         int courseId)

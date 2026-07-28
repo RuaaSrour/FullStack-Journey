@@ -1,6 +1,7 @@
 ﻿using Assig1.Data;
 using Assig1.DTOs;
 using Assig1.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,6 +9,7 @@ namespace Assig1.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class CoursesController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -54,6 +56,7 @@ namespace Assig1.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Teacher,Admin")]
         public async Task<ActionResult<CourseDto>> AddCourse(CourseCreateDto courseDto)
         {
             // Map the incoming DTO to a new Course entity
@@ -82,6 +85,7 @@ namespace Assig1.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Teacher,Admin")]
         public async Task<ActionResult<CourseDto>> UpdateCourse(
             int id,
             CourseUpdateDto courseDto)
@@ -111,6 +115,7 @@ namespace Assig1.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Teacher,Admin")]
         public async Task<ActionResult> DeleteCourse(int id)
         {
             // Search for the course
@@ -216,6 +221,7 @@ namespace Assig1.Controllers
 
         // Add a prerequisite to a course
         [HttpPost("{courseId}/prerequisites/{prerequisiteCourseId}")]
+        [Authorize(Roles = "Teacher,Admin")]
         public async Task<ActionResult> AddCoursePrerequisite(
             int courseId,
             int prerequisiteCourseId)
@@ -274,6 +280,7 @@ namespace Assig1.Controllers
 
         // Remove a prerequisite from a course
         [HttpDelete("{courseId}/prerequisites/{prerequisiteCourseId}")]
+        [Authorize(Roles = "Teacher,Admin")]
         public async Task<ActionResult> RemoveCoursePrerequisite(
             int courseId,
             int prerequisiteCourseId)

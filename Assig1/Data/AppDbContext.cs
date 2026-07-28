@@ -26,6 +26,11 @@ namespace Assig1.Data
         // Represent the CoursePrerequisites table
         public DbSet<CoursePrerequisite> CoursePrerequisites { get; set; }
 
+        // Represent the UserAccounts table
+        public DbSet<UserAccount> Users { get; set; }
+
+
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -66,6 +71,34 @@ namespace Assig1.Data
             modelBuilder.Entity<CoursePrerequisite>()
                 .HasIndex(cp => new { cp.CourseId, cp.PrerequisiteCourseId })
                 .IsUnique();
+
+            // UserAccount: links to Student/Teacher, no inverse navigation on either side
+            modelBuilder.Entity<UserAccount>()
+                .HasOne(u => u.Student)
+                .WithMany()
+                .HasForeignKey(u => u.StudentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<UserAccount>()
+                .HasOne(u => u.Teacher)
+                .WithMany()
+                .HasForeignKey(u => u.TeacherId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Enforce unique usernames, and at most one account per student/teacher
+            modelBuilder.Entity<UserAccount>()
+                .HasIndex(u => u.Username)
+                .IsUnique();
+
+            modelBuilder.Entity<UserAccount>()
+                .HasIndex(u => u.StudentId)
+                .IsUnique();
+
+            modelBuilder.Entity<UserAccount>()
+                .HasIndex(u => u.TeacherId)
+                .IsUnique();
+
+
         }
     }
 

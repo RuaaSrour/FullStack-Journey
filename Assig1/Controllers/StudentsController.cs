@@ -1,6 +1,7 @@
 ﻿using Assig1.Data;
 using Assig1.DTOs;
 using Assig1.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,6 +9,7 @@ namespace Assig1.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class StudentsController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -53,6 +55,7 @@ namespace Assig1.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<StudentDto>> AddStudent(StudentCreateDto studentDto)
         {
             // Map the incoming DTO to a new Student entity
@@ -79,6 +82,7 @@ namespace Assig1.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<StudentDto>> UpdateStudent(
             int id,
             StudentUpdateDto studentDto)
@@ -106,6 +110,7 @@ namespace Assig1.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult> DeleteStudent(int id)
         {
             // Search for the student
@@ -127,6 +132,7 @@ namespace Assig1.Controllers
         }
         // Student-course relationship endpoints
         [HttpPost("{studentId}/courses/{courseId}")]
+        [Authorize(Roles = "Student,Admin")]
         public async Task<ActionResult> AddCourseToStudent(
     int studentId,
     int courseId)
@@ -204,6 +210,7 @@ namespace Assig1.Controllers
         }
 
         [HttpDelete("{studentId}/courses/{courseId}")]
+        [Authorize(Roles = "Student,Admin")]
         public async Task<ActionResult> RemoveCourseFromStudent(
     int studentId,
     int courseId)
@@ -227,6 +234,7 @@ namespace Assig1.Controllers
         }
 
         [HttpPut("{studentId}/courses/{courseId}")]
+        [Authorize(Roles = "Teacher,Admin")]
         public async Task<ActionResult> UpdateStudentCourse(
             int studentId,
             int courseId,

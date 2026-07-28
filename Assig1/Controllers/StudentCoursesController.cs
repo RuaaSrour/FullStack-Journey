@@ -1,6 +1,7 @@
 using Assig1.Data;
 using Assig1.DTOs;
 using Assig1.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,6 +9,7 @@ namespace Assig1.Controllers
 {
     [ApiController]
     [Route("api/student-courses")]
+    [Authorize(Roles = "Teacher,Admin")]
     public class StudentCoursesController : ControllerBase
     {
         private readonly AppDbContext _context;
