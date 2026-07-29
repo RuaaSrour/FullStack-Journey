@@ -20,7 +20,22 @@ namespace Assig1.Controllers
             _context = context;
         }
 
+        // Returns true if the caller is a Student trying to access a
+        // different student's record (Admin/Teacher are never restricted).
+        private bool IsStudentAccessingOtherRecord(int studentId)
+        {
+            if (!User.IsInRole("Student"))
+            {
+                return false;
+            }
+
+            string? claimStudentId = User.FindFirst("studentId")?.Value;
+
+            return claimStudentId != studentId.ToString();
+        }
+
         [HttpGet]
+        [Authorize(Roles = "Teacher,Admin")]
         public async Task<ActionResult<List<StudentDto>>> GetAllStudents()
         {
             // Read all students from the database
@@ -38,6 +53,11 @@ namespace Assig1.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<StudentDto>> GetStudentById(int id)
         {
+            if (IsStudentAccessingOtherRecord(id))
+            {
+                return Forbid();
+            }
+
             // Search for one student by Id
             Student? student =
                 await _context.Students.FindAsync(id);
@@ -137,6 +157,11 @@ namespace Assig1.Controllers
     int studentId,
     int courseId)
         {
+            if (IsStudentAccessingOtherRecord(studentId))
+            {
+                return Forbid();
+            }
+
             // Confirm the student exists
             bool studentExists = await _context.Students.AnyAsync(s => s.Id == studentId);
 
@@ -215,6 +240,11 @@ namespace Assig1.Controllers
     int studentId,
     int courseId)
         {
+            if (IsStudentAccessingOtherRecord(studentId))
+            {
+                return Forbid();
+            }
+
             // Find the enrollment record
             StudentCourse? studentCourse = await _context.StudentCourses
                 .FirstOrDefaultAsync(sc => sc.StudentId == studentId && sc.CourseId == courseId);
@@ -269,6 +299,11 @@ namespace Assig1.Controllers
         [HttpGet("{studentId}/courses")]
         public async Task<ActionResult<StudentCoursesDto>> GetStudentCourses(int studentId)
         {
+            if (IsStudentAccessingOtherRecord(studentId))
+            {
+                return Forbid();
+            }
+
             // Find the student with registered courses
             Student? student = await _context.Students
                 .Include(s => s.StudentCourses)
